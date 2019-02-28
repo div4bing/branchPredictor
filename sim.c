@@ -87,6 +87,7 @@ int main(int argc, char *argv[]) //sim bimodal <M> <tracefile>
 
     if (instruction[instruction[i].pt_index].pt_value >= 4)
     {
+      printf("\tPrediction:	true\n");
       if (instruction[i].actual_prediction == 1)
       {
         if(instruction[instruction[i].pt_index].pt_value < 7 && instruction[instruction[i].pt_index].pt_value >= 0)
@@ -95,7 +96,6 @@ int main(int argc, char *argv[]) //sim bimodal <M> <tracefile>
         }
         instruction[i].pt_value_updated = 1;
         true_prediction++;
-        printf("\tPrediction:	true\n");
       }
       else
       {
@@ -104,11 +104,11 @@ int main(int argc, char *argv[]) //sim bimodal <M> <tracefile>
           instruction[instruction[i].pt_index].pt_value--;
         }
         instruction[i].pt_value_updated = 1;
-        printf("\tPrediction:	false\n");
       }
     }
     else
     {
+      printf("\tPrediction:	false\n");
       if (instruction[i].actual_prediction == 1)
       {
         if(instruction[instruction[i].pt_index].pt_value < 7 && instruction[instruction[i].pt_index].pt_value >= 0)
@@ -116,7 +116,6 @@ int main(int argc, char *argv[]) //sim bimodal <M> <tracefile>
           instruction[instruction[i].pt_index].pt_value++;
         }
         instruction[i].pt_value_updated = 1;
-        printf("\tPrediction:	false\n");
       }
       else
       {
@@ -126,7 +125,6 @@ int main(int argc, char *argv[]) //sim bimodal <M> <tracefile>
         }
         instruction[i].pt_value_updated = 1;
         true_prediction++;
-        printf("\tPrediction:	true\n");
       }
     }
     printf("\tNew PT value:	%d\n", instruction[instruction[i].pt_index].pt_value);
