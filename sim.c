@@ -287,7 +287,7 @@ int getGsharePrediction(char *argv[])      //sim gshare <M> <N> <tracefile>
   unsigned char temp_prediction = ' ';
 
 #if ENABLE_DEBUG
-  size = 10;
+  size = 100000;
 #endif
 
   for (long long i=0; i<size; i++)
@@ -308,6 +308,7 @@ int getGsharePrediction(char *argv[])      //sim gshare <M> <N> <tracefile>
 
     // Calculate global branch history register value
     multiplier=1;
+    global_branch_history_register_value = 0;
     for (unsigned int j=0; j<n_bits; j++)
     {
       global_branch_history_register_value += global_branch_history_register[(n_bits-1)-j]*multiplier;
