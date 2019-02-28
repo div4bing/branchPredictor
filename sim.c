@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 
 long long getTotalLines(FILE *fp);
 long long totalLines;
@@ -25,8 +26,6 @@ int main(int argc, char *argv[]) //sim bimodal <M> <tracefile>
   unsigned int m_value = 0;
   unsigned int m_bits = 0;
   unsigned int n_bits = 0;
-  unsigned int hexVal = 0;
-  unsigned int PT = 0;
 
   // if (argc != 3)                                                                // Make sure the number of input is correct
   // {
@@ -132,9 +131,18 @@ int main(int argc, char *argv[]) //sim bimodal <M> <tracefile>
   }
 
   printf("OUTPUT\n");
-  printf("number of predictions:		%d\n", size);
+  printf("number of predictions:		%lld\n", size);
   printf("number of mispredictions:	%lld\n", (long long)(size - true_prediction));
-  printf("misprediction rate:		%f%\n", ((float)(size - true_prediction)/size)*100);
+  printf("misprediction rate:		%.2f%\n", ((float)(size - true_prediction)/size)*100);
+
+  unsigned int sizeofMtable = pow(2, m_bits);
+
+  printf("FINAL BIMODAL CONTENTS\n");
+
+  for (unsigned int i = 0; i < sizeofMtable; i++)
+  {
+    printf("%d\t%d\n",i,  instruction[i].pt_value);
+  }
 
   fclose(inputFD);
   free(instruction);
