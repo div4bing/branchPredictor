@@ -444,6 +444,7 @@ int getHybridPrediction(char * argv[])    //sim hybrid <K> <M1> <N> <M2> <tracef
   unsigned int k_bits = 0;
   unsigned int m1_branch = 0;
   unsigned int m2_branch = 0;
+  unsigned int chooser_branch = 0;
   unsigned int m1_bits = 0;
   unsigned int n_bits = 0;
   unsigned int m2_bits = 0;
@@ -458,6 +459,7 @@ int getHybridPrediction(char * argv[])    //sim hybrid <K> <M1> <N> <M2> <tracef
   memset(global_branch_history_register, 0, sizeof(global_branch_history_register));
   unsigned int global_branch_history_register_value = 0;
 
+
   // Gshare
   for (unsigned int i = 0; i < m1_bits; i++)    // Based on m1 value, creating the m1_branch
   {
@@ -471,6 +473,15 @@ int getHybridPrediction(char * argv[])    //sim hybrid <K> <M1> <N> <M2> <tracef
     m2_branch = (m2_branch << 1) | 1;
   }
   m2_branch = m2_branch << IGNORE_BITS;
+
+  // Chooser
+  for (unsigned int i = 0; i < k_bits; i++)    // Based on k value, creating the chooser_branch
+  {
+    chooser_branch = (chooser_branch << 1) | 1;
+  }
+  chooser_branch = chooser_branch << IGNORE_BITS;
+
+
 
   inputFD = fopen(argv[6], "r");                                                // Open file for Reading the input
   if (inputFD == NULL)
@@ -505,6 +516,13 @@ int getHybridPrediction(char * argv[])    //sim hybrid <K> <M1> <N> <M2> <tracef
       instruction[i].bimodal_pt_value_updated = 1;
     }
 
+    //Chooser
+    if(instruction[i].chooser_value_updated == 0)        // Initiate all PT values to 1
+    {
+      instruction[i].chooser_value = 1;
+      instruction[i].chooser_value_updated = 1;
+    }
+
     fgets(string, 100, inputFD);
     sscanf(string, "%x %c", &(instruction[i].branch_counter), &temp_prediction);
     instruction[i].actual_prediction = (temp_prediction == 't' ? 1 : 0);
@@ -534,6 +552,10 @@ int getHybridPrediction(char * argv[])    //sim hybrid <K> <M1> <N> <M2> <tracef
     instruction[i].bimodal_pt_index = instruction[i].branch_counter & m2_branch;
     instruction[i].bimodal_pt_index = instruction[i].bimodal_pt_index >> IGNORE_BITS;
 
+    //Chooser
+    instruction[i].chooser_index = instruction[i].branch_counter & chooser_branch;
+    instruction[i].chooser_index = instruction[i].chooser_index >> IGNORE_BITS;
+
     // Shift the Global Branch History Register based on actual outcome
     for (unsigned int k = (n_bits - 1); k > 0; k--)
     {
@@ -541,17 +563,28 @@ int getHybridPrediction(char * argv[])    //sim hybrid <K> <M1> <N> <M2> <tracef
     }
     global_branch_history_register[0] = instruction[i].actual_prediction;
 
+    //Bimodal
     if(instruction[instruction[i].bimodal_pt_index].bimodal_pt_value_updated == 0)        // Initiate all PT values to 4
     {
       instruction[instruction[i].bimodal_pt_index].bimodal_pt_value = 4;
       instruction[instruction[i].bimodal_pt_index].bimodal_pt_value_updated = 1;
     }
 
+    //Chooser
+    if(instruction[instruction[i].chooser_index].chooser_value_updated == 0)        // Initiate all PT values to 4
+    {
+      instruction[instruction[i].chooser_index].chooser_value = 1;
+      instruction[instruction[i].chooser_index].chooser_value_updated = 1;
+    }
+
 #if ENABLE_DEBUG
+    printf("\tCT index:	%lld\n", instruction[i].chooser_index);
+    printf("\tCT value:	%d\n", instruction[instruction[i].chooser_index].chooser_value);
     printf("\tbimodal-PT index:	%lld\n", instruction[i].bimodal_pt_index);
     printf("\tbimodal-PT value:	%d\n", instruction[instruction[i].bimodal_pt_index].bimodal_pt_value);
 #endif
 
+    //Gshare
     if(instruction[instruction[i].gshare_pt_index].gshare_pt_value_updated == 0)        // Initiate all PT values to 4
     {
       instruction[instruction[i].gshare_pt_index].gshare_pt_value = 4;
@@ -562,6 +595,109 @@ int getHybridPrediction(char * argv[])    //sim hybrid <K> <M1> <N> <M2> <tracef
     printf("\tgshare-PT index:	%lld\n", instruction[i].gshare_pt_index);
     printf("\tgshare-PT value:	%d\n", instruction[instruction[i].gshare_pt_index].gshare_pt_value);
 #endif
+
+    // Chooser -----------------------------------------------------------------------
+
+    if (instruction[instruction[i].chooser_index].chooser_value >= 2)   // Choose value is greater or equals to 2, select Gshare
+    {
+      // Gshare ------------------------------------------------------------------------
+
+      if (instruction[instruction[i].gshare_pt_index].gshare_pt_value >= 4)
+      {
+
+    #if ENABLE_DEBUG
+        printf("\tPrediction:	true\n");
+    #endif
+
+        if (instruction[i].actual_prediction == 1)
+        {
+          // Update Chooser value
+          if (instruction[instruction[i].bimodal_pt_index].bimodal_pt_value < 4)
+          {
+            if(instruction[instruction[i].chooser_index].chooser_value < 3 && instruction[instruction[i].chooser_index].chooser_value >= 0)
+            {
+              instruction[instruction[i].chooser_index].chooser_value++;
+            }
+            instruction[i].chooser_value_updated = 1;
+          }
+
+          if(instruction[instruction[i].gshare_pt_index].gshare_pt_value < 7 && instruction[instruction[i].gshare_pt_index].gshare_pt_value >= 0)
+          {
+            instruction[instruction[i].gshare_pt_index].gshare_pt_value++;
+          }
+          instruction[i].gshare_pt_value_updated = 1;
+          true_prediction++;
+        }
+        else
+        {
+          // Update Chooser value
+          if (instruction[instruction[i].bimodal_pt_index].bimodal_pt_value < 4)
+          {
+            if(instruction[instruction[i].chooser_index].chooser_value <= 3 && instruction[instruction[i].chooser_index].chooser_value > 0)
+            {
+              instruction[instruction[i].chooser_index].chooser_value--;
+            }
+            instruction[i].chooser_value_updated = 1;
+          }
+
+          if(instruction[instruction[i].gshare_pt_index].gshare_pt_value <= 7 && instruction[instruction[i].gshare_pt_index].gshare_pt_value > 0)
+          {
+            instruction[instruction[i].gshare_pt_index].gshare_pt_value--;
+          }
+          instruction[i].gshare_pt_value_updated = 1;
+        }
+      }
+      else
+      {
+
+    #if ENABLE_DEBUG
+        printf("\tPrediction:	false\n");
+    #endif
+
+        if (instruction[i].actual_prediction == 1)
+        {
+          // Update Chooser value
+          if (instruction[instruction[i].bimodal_pt_index].bimodal_pt_value >= 4)
+          {
+            if(instruction[instruction[i].chooser_index].chooser_value <= 3 && instruction[instruction[i].chooser_index].chooser_value > 0)
+            {
+              instruction[instruction[i].chooser_index].chooser_value--;
+            }
+            instruction[i].chooser_value_updated = 1;
+          }
+
+          if(instruction[instruction[i].gshare_pt_index].gshare_pt_value < 7 && instruction[instruction[i].gshare_pt_index].gshare_pt_value >= 0)
+          {
+            instruction[instruction[i].gshare_pt_index].gshare_pt_value++;
+          }
+          instruction[i].gshare_pt_value_updated = 1;
+        }
+        else
+        {
+          // Update Chooser value
+          if (instruction[instruction[i].bimodal_pt_index].bimodal_pt_value >= 4)
+          {
+            if(instruction[instruction[i].chooser_index].chooser_value < 3 && instruction[instruction[i].chooser_index].chooser_value >= 0)
+            {
+              instruction[instruction[i].chooser_index].chooser_value++;
+            }
+            instruction[i].chooser_value_updated = 1;
+          }
+
+          if(instruction[instruction[i].gshare_pt_index].gshare_pt_value <= 7 && instruction[instruction[i].gshare_pt_index].gshare_pt_value > 0)
+          {
+            instruction[instruction[i].gshare_pt_index].gshare_pt_value--;
+          }
+          instruction[i].gshare_pt_value_updated = 1;
+          true_prediction++;
+        }
+      }
+  #if ENABLE_DEBUG
+      printf("\tNew gshare-PT value:	%d\n", instruction[instruction[i].gshare_pt_index].gshare_pt_value);
+  #endif
+    }
+    else        // Else Select Bimodal
+    {
 
     // Bimodal -----------------------------------------------------------------------
 
@@ -574,6 +710,16 @@ int getHybridPrediction(char * argv[])    //sim hybrid <K> <M1> <N> <M2> <tracef
 
       if (instruction[i].actual_prediction == 1)
       {
+        // Update Chooser value
+        if (instruction[instruction[i].gshare_pt_index].gshare_pt_value < 4)
+        {
+          if(instruction[instruction[i].chooser_index].chooser_value <= 3 && instruction[instruction[i].chooser_index].chooser_value > 0)
+          {
+            instruction[instruction[i].chooser_index].chooser_value--;
+          }
+          instruction[i].chooser_value_updated = 1;
+        }
+
         if(instruction[instruction[i].bimodal_pt_index].bimodal_pt_value < 7 && instruction[instruction[i].bimodal_pt_index].bimodal_pt_value >= 0)
         {
           instruction[instruction[i].bimodal_pt_index].bimodal_pt_value++;
@@ -583,6 +729,16 @@ int getHybridPrediction(char * argv[])    //sim hybrid <K> <M1> <N> <M2> <tracef
       }
       else
       {
+        // Update Chooser value
+        if (instruction[instruction[i].gshare_pt_index].gshare_pt_value >= 4)
+        {
+          if(instruction[instruction[i].chooser_index].chooser_value < 3 && instruction[instruction[i].chooser_index].chooser_value >= 0)
+          {
+            instruction[instruction[i].chooser_index].chooser_value++;
+          }
+          instruction[i].chooser_value_updated = 1;
+        }
+
         if(instruction[instruction[i].bimodal_pt_index].bimodal_pt_value <= 7 && instruction[instruction[i].bimodal_pt_index].bimodal_pt_value > 0)
         {
           instruction[instruction[i].bimodal_pt_index].bimodal_pt_value--;
@@ -599,6 +755,16 @@ int getHybridPrediction(char * argv[])    //sim hybrid <K> <M1> <N> <M2> <tracef
 
       if (instruction[i].actual_prediction == 1)
       {
+        // Update Chooser value
+        if (instruction[instruction[i].gshare_pt_index].gshare_pt_value >= 4)
+        {
+          if(instruction[instruction[i].chooser_index].chooser_value < 3 && instruction[instruction[i].chooser_index].chooser_value >= 0)
+          {
+            instruction[instruction[i].chooser_index].chooser_value++;
+          }
+          instruction[i].chooser_value_updated = 1;
+        }
+
         if(instruction[instruction[i].bimodal_pt_index].bimodal_pt_value < 7 && instruction[instruction[i].bimodal_pt_index].bimodal_pt_value >= 0)
         {
           instruction[instruction[i].bimodal_pt_index].bimodal_pt_value++;
@@ -607,6 +773,16 @@ int getHybridPrediction(char * argv[])    //sim hybrid <K> <M1> <N> <M2> <tracef
       }
       else
       {
+        // Update Chooser value
+        if (instruction[instruction[i].gshare_pt_index].gshare_pt_value >= 4)
+        {
+          if(instruction[instruction[i].chooser_index].chooser_value <= 3 && instruction[instruction[i].chooser_index].chooser_value > 0)
+          {
+            instruction[instruction[i].chooser_index].chooser_value--;
+          }
+          instruction[i].chooser_value_updated = 1;
+        }
+
         if(instruction[instruction[i].bimodal_pt_index].bimodal_pt_value <= 7 && instruction[instruction[i].bimodal_pt_index].bimodal_pt_value > 0)
         {
           instruction[instruction[i].bimodal_pt_index].bimodal_pt_value--;
@@ -619,71 +795,20 @@ int getHybridPrediction(char * argv[])    //sim hybrid <K> <M1> <N> <M2> <tracef
     #if ENABLE_DEBUG
       printf("\tNew bimodal-PT value:	%d\n", instruction[instruction[i].bimodal_pt_index].bimodal_pt_value);
     #endif
-    // Gshare ------------------------------------------------------------------------
-
-    if (instruction[instruction[i].gshare_pt_index].gshare_pt_value >= 4)
-    {
-
-#if ENABLE_DEBUG
-      printf("\tPrediction:	true\n");
-#endif
-
-      if (instruction[i].actual_prediction == 1)
-      {
-        if(instruction[instruction[i].gshare_pt_index].gshare_pt_value < 7 && instruction[instruction[i].gshare_pt_index].gshare_pt_value >= 0)
-        {
-          instruction[instruction[i].gshare_pt_index].gshare_pt_value++;
-        }
-        instruction[i].gshare_pt_value_updated = 1;
-        true_prediction++;
-      }
-      else
-      {
-        if(instruction[instruction[i].gshare_pt_index].gshare_pt_value <= 7 && instruction[instruction[i].gshare_pt_index].gshare_pt_value > 0)
-        {
-          instruction[instruction[i].gshare_pt_index].gshare_pt_value--;
-        }
-        instruction[i].gshare_pt_value_updated = 1;
-      }
-    }
-    else
-    {
-
-#if ENABLE_DEBUG
-      printf("\tPrediction:	false\n");
-#endif
-
-      if (instruction[i].actual_prediction == 1)
-      {
-        if(instruction[instruction[i].gshare_pt_index].gshare_pt_value < 7 && instruction[instruction[i].gshare_pt_index].gshare_pt_value >= 0)
-        {
-          instruction[instruction[i].gshare_pt_index].gshare_pt_value++;
-        }
-        instruction[i].gshare_pt_value_updated = 1;
-      }
-      else
-      {
-        if(instruction[instruction[i].gshare_pt_index].gshare_pt_value <= 7 && instruction[instruction[i].gshare_pt_index].gshare_pt_value > 0)
-        {
-          instruction[instruction[i].gshare_pt_index].gshare_pt_value--;
-        }
-        instruction[i].gshare_pt_value_updated = 1;
-        true_prediction++;
-      }
     }
 
 #if ENABLE_DEBUG
-    printf("\tNew gshare-PT value:	%d\n", instruction[instruction[i].gshare_pt_index].gshare_pt_value);
     printf("\tBHR now set to:\t");
     for (unsigned int j=0; j < n_bits; j++)
     {
       printf("[%d]", global_branch_history_register[j]);
     }
-    printf("\n\n");
+    printf("\n");
+    printf("\tNew CT value:	%d\n\n", instruction[instruction[i].chooser_index].chooser_value);
 #endif
   }
 
-#if 0
+#if 1
   printf("OUTPUT\n");
   printf("number of predictions:		%lld\n", size);
   printf("number of mispredictions:	%lld\n", (long long)(size - true_prediction));
