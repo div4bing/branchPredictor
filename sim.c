@@ -730,7 +730,7 @@ int getHybridPrediction(char * argv[])    //sim hybrid <K> <M1> <N> <M2> <tracef
       else
       {
         // Update Chooser value
-        if (instruction[instruction[i].gshare_pt_index].gshare_pt_value >= 4)
+        if (instruction[instruction[i].gshare_pt_index].gshare_pt_value < 4)
         {
           if(instruction[instruction[i].chooser_index].chooser_value < 3 && instruction[instruction[i].chooser_index].chooser_value >= 0)
           {
