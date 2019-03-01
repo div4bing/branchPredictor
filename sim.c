@@ -814,13 +814,35 @@ int getHybridPrediction(char * argv[])    //sim hybrid <K> <M1> <N> <M2> <tracef
   printf("number of mispredictions:	%lld\n", (long long)(size - true_prediction));
   printf("misprediction rate:		%.2f%\n", ((float)(size - true_prediction)/size)*100);
 
-  unsigned int sizeofPredictionTable = pow(2, m1_bits);
+
+  //Chooser
+  unsigned int sizeofChooserTable = pow(2, k_bits);
+
+  printf("FINAL CHOOSER CONTENTS\n");
+
+  for (unsigned int i = 0; i < sizeofChooserTable; i++)
+  {
+    printf("%d\t%d\n",i,  instruction[i].chooser_value);
+  }
+
+  //Gshare
+  unsigned int sizeofGshareTable = pow(2, m1_bits);
+
+  printf("FINAL GSHARE CONTENTS\n");
+
+  for (unsigned int i = 0; i < sizeofGshareTable; i++)
+  {
+    printf("%d\t%d\n",i,  instruction[i].gshare_pt_value);
+  }
+
+  //Bimodal
+  unsigned int sizeofPredictionTable = pow(2, m2_bits);
 
   printf("FINAL BIMODAL CONTENTS\n");
 
   for (unsigned int i = 0; i < sizeofPredictionTable; i++)
   {
-    printf("%d\t%d\n",i,  instruction[i].gshare_pt_value);
+    printf("%d\t%d\n",i,  instruction[i].bimodal_pt_value);
   }
 #endif
 
