@@ -27,7 +27,7 @@ sim: $(SIM_OBJ)
 # generic rule for converting any .cc file to any .o file
 
 .cc.o:
-	$(CC) $(CFLAGS)  -c $*.c
+	$(CC) $(CFLAGS) -lm -c $*.c
 
 
 # type "make clean" to remove all .o files plus the sim binary

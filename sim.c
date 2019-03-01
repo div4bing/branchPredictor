@@ -58,6 +58,13 @@ int main(int argc, char *argv[])
     return -1;
   }
 
+  printf("COMMAND\n");
+  for (int c = 0; c < argc; c++)
+  {
+    printf("%s ", argv[c]);
+  }
+  printf("\n");
+
   if (global_predictor_type_flag == BIMODAL_PREDICTOR)
   {
     if (argc != 4)                                                                // Make sure the number of input is correct
@@ -239,7 +246,7 @@ int getBimodalPrediction(char *argv[])     //sim bimodal <M> <tracefile>
   printf("OUTPUT\n");
   printf("number of predictions:		%lld\n", size);
   printf("number of mispredictions:	%lld\n", (long long)(size - true_prediction));
-  printf("misprediction rate:		%.2f%\n", ((float)(size - true_prediction)/size)*100);
+  printf("misprediction rate:		%.2f%\n", ((round)(size - true_prediction)/size)*100);
 
   unsigned int sizeofPredictionTable = pow(2, m_bits);
 
@@ -416,11 +423,11 @@ int getGsharePrediction(char *argv[])      //sim gshare <M> <N> <tracefile>
   printf("OUTPUT\n");
   printf("number of predictions:		%lld\n", size);
   printf("number of mispredictions:	%lld\n", (long long)(size - true_prediction));
-  printf("misprediction rate:		%.2f%\n", ((float)(size - true_prediction)/size)*100);
+  printf("misprediction rate:		%.2f%\n", ((round)(size - true_prediction)/size)*100);
 
   unsigned int sizeofPredictionTable = pow(2, m_bits);
 
-  printf("FINAL BIMODAL CONTENTS\n");
+  printf("FINAL GSHARE CONTENTS\n");
 
   for (unsigned int i = 0; i < sizeofPredictionTable; i++)
   {
@@ -812,8 +819,7 @@ int getHybridPrediction(char * argv[])    //sim hybrid <K> <M1> <N> <M2> <tracef
   printf("OUTPUT\n");
   printf("number of predictions:		%lld\n", size);
   printf("number of mispredictions:	%lld\n", (long long)(size - true_prediction));
-  printf("misprediction rate:		%.2f%\n", ((float)(size - true_prediction)/size)*100);
-
+  printf("misprediction rate:		%.2f%\n", ((round)(size - true_prediction)/size)*100);
 
   //Chooser
   unsigned int sizeofChooserTable = pow(2, k_bits);
