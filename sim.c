@@ -5,7 +5,7 @@
 
 long long getTotalLines(FILE *fp);
 long long totalLines;
-#define ENABLE_DEBUG 1  //Enable debug = 1, Disable debug = 0
+#define ENABLE_DEBUG 0  //Enable debug = 1, Disable debug = 0
 #define IGNORE_BITS 2
 
 #define BIMODAL_PREDICTOR 0
