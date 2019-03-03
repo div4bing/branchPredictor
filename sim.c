@@ -3,9 +3,9 @@
 #include <math.h>
 #include <string.h>
 
-long long getTotalLines(FILE *fp);
-long long totalLines;
-#define ENABLE_DEBUG 0  //Enable debug = 1, Disable debug = 0
+long long getTotalLines(FILE *fp);  // Get totoal lines from the input file
+long long totalLines;               // Variable that stores totol lines
+#define ENABLE_DEBUG 1              //Enable debug = 1, Disable debug = 0
 #define IGNORE_BITS 2
 
 #define BIMODAL_PREDICTOR 0
@@ -33,10 +33,10 @@ int getBimodalPrediction(char * argv[]);      // Process Bimodal Predictor
 int getGsharePrediction(char * argv[]);       // Process Gshare Predictor
 int getHybridPrediction(char * argv[]);       // Process Hybrid Predictor
 
-long long true_prediction;
+long long true_prediction;                    // Global Counter
 unsigned int global_predictor_type_flag = BIMODAL_PREDICTOR; // 0 = Bimodal, 1 = Gshare, 2 = Hybrid
 
-int main(int argc, char *argv[])
+int main(int argc, char *argv[])              // Main function
 {
   int ret = -1;
 
@@ -73,7 +73,7 @@ int main(int argc, char *argv[])
       return -1;
     }
 
-    ret = getBimodalPrediction(argv);
+    ret = getBimodalPrediction(argv);                                            // Run the bimodal predictor
   }
   else if (global_predictor_type_flag == GSHARE_PREDICTOR)
   {
@@ -83,7 +83,7 @@ int main(int argc, char *argv[])
       return -1;
     }
 
-    ret = getGsharePrediction(argv);
+    ret = getGsharePrediction(argv);                                              // Run the gshare predictor
   }
   else
   {
@@ -93,18 +93,19 @@ int main(int argc, char *argv[])
       return -1;
     }
 
-    ret = getHybridPrediction(argv);
+    ret = getHybridPrediction(argv);                                              // Run the hybrid predictor
   }
 
   return ret;
 }
 
+// Function to get totalLines from input file
 long long getTotalLines(FILE *fp)
 {
   long long totalLines = 0;
   char string[100];
 
-  while(!feof(fp)) {
+  while(!feof(fp)) {                      // Until end of file
     fgets(string, 100, fp);
     totalLines++;
   }
@@ -116,7 +117,7 @@ long long getTotalLines(FILE *fp)
     exit(0);
   }
 
-  return totalLines;
+  return totalLines;                      // Return total lines
 }
 
 //----------------------------------- BIMODAL -------------------------------------------------
@@ -163,14 +164,14 @@ int getBimodalPrediction(char *argv[])     //sim bimodal <M> <tracefile>
     }
 
     fgets(string, 100, inputFD);
-    sscanf(string, "%x %c", &(instruction[i].branch_counter), &temp_prediction);
+    sscanf(string, "%x %c", &(instruction[i].branch_counter), &temp_prediction);    // Check what's the actual branch
     instruction[i].actual_prediction = (temp_prediction == 't' ? 1 : 0);
 
 #if ENABLE_DEBUG
     printf("<Line #%lld>	%x	%c\n", i, instruction[i].branch_counter, temp_prediction);
 #endif
 
-    instruction[i].bimodal_pt_index = instruction[i].branch_counter & m_branch;
+    instruction[i].bimodal_pt_index = instruction[i].branch_counter & m_branch;     // Calculate the index
     instruction[i].bimodal_pt_index = instruction[i].bimodal_pt_index >> IGNORE_BITS;
 
 #if ENABLE_DEBUG
@@ -187,7 +188,7 @@ int getBimodalPrediction(char *argv[])     //sim bimodal <M> <tracefile>
     printf("\tPT value:	%d\n", instruction[instruction[i].bimodal_pt_index].bimodal_pt_value);
 #endif
 
-    if (instruction[instruction[i].bimodal_pt_index].bimodal_pt_value >= 4)
+    if (instruction[instruction[i].bimodal_pt_index].bimodal_pt_value >= 4)               // predicted taken
     {
 
 #if ENABLE_DEBUG
@@ -212,7 +213,7 @@ int getBimodalPrediction(char *argv[])     //sim bimodal <M> <tracefile>
         instruction[i].bimodal_pt_value_updated = 1;
       }
     }
-    else
+    else                                  // Predicted not taken
     {
 
 #if ENABLE_DEBUG
@@ -314,7 +315,7 @@ int getGsharePrediction(char *argv[])      //sim gshare <M> <N> <tracefile>
     }
 
     fgets(string, 100, inputFD);
-    sscanf(string, "%x %c", &(instruction[i].branch_counter), &temp_prediction);
+    sscanf(string, "%x %c", &(instruction[i].branch_counter), &temp_prediction);      // Checks the actual branch
     instruction[i].actual_prediction = (temp_prediction == 't' ? 1 : 0);
 
 #if ENABLE_DEBUG
@@ -334,7 +335,7 @@ int getGsharePrediction(char *argv[])      //sim gshare <M> <N> <tracefile>
     printf("global_branch_history_register_value: %d\n", global_branch_history_register_value);
 #endif
 
-    instruction[i].gshare_pt_index = instruction[i].branch_counter & m_branch;
+    instruction[i].gshare_pt_index = instruction[i].branch_counter & m_branch;      // Calculate the index
     instruction[i].gshare_pt_index = ((instruction[i].gshare_pt_index >> IGNORE_BITS) ^ global_branch_history_register_value);    // XOR with Global Branch History Register
 
     // Shift the Global Branch History Register based on actual outcome
@@ -358,7 +359,7 @@ int getGsharePrediction(char *argv[])      //sim gshare <M> <N> <tracefile>
     printf("\tPT value:	%d\n", instruction[instruction[i].gshare_pt_index].gshare_pt_value);
 #endif
 
-    if (instruction[instruction[i].gshare_pt_index].gshare_pt_value >= 4)
+    if (instruction[instruction[i].gshare_pt_index].gshare_pt_value >= 4)             // Predicted taken
     {
 
 #if ENABLE_DEBUG
@@ -383,7 +384,7 @@ int getGsharePrediction(char *argv[])      //sim gshare <M> <N> <tracefile>
         instruction[i].gshare_pt_value_updated = 1;
       }
     }
-    else
+    else                    // Predicted not taken
     {
 
 #if ENABLE_DEBUG
@@ -531,7 +532,7 @@ int getHybridPrediction(char * argv[])    //sim hybrid <K> <M1> <N> <M2> <tracef
     }
 
     fgets(string, 100, inputFD);
-    sscanf(string, "%x %c", &(instruction[i].branch_counter), &temp_prediction);
+    sscanf(string, "%x %c", &(instruction[i].branch_counter), &temp_prediction);        // Checks the actual branch
     instruction[i].actual_prediction = (temp_prediction == 't' ? 1 : 0);
 
 #if ENABLE_DEBUG
@@ -550,6 +551,8 @@ int getHybridPrediction(char * argv[])    //sim hybrid <K> <M1> <N> <M2> <tracef
 #if 0
     printf("global_branch_history_register_value: %d\n", global_branch_history_register_value);
 #endif
+
+    // Calculate index below for all three
 
     //Gshare
     instruction[i].gshare_pt_index = instruction[i].branch_counter & m1_branch;
@@ -609,7 +612,7 @@ int getHybridPrediction(char * argv[])    //sim hybrid <K> <M1> <N> <M2> <tracef
     {
       // Gshare ------------------------------------------------------------------------
 
-      if (instruction[instruction[i].gshare_pt_index].gshare_pt_value >= 4)
+      if (instruction[instruction[i].gshare_pt_index].gshare_pt_value >= 4)   // Predicted taken
       {
 
     #if ENABLE_DEBUG
@@ -619,7 +622,7 @@ int getHybridPrediction(char * argv[])    //sim hybrid <K> <M1> <N> <M2> <tracef
         if (instruction[i].actual_prediction == 1)
         {
           // Update Chooser value
-          if (instruction[instruction[i].bimodal_pt_index].bimodal_pt_value < 4)
+          if (instruction[instruction[i].bimodal_pt_index].bimodal_pt_value < 4)    // gshare taken, actual taken, bimodal not taken
           {
             if(instruction[instruction[i].chooser_index].chooser_value < 3 && instruction[instruction[i].chooser_index].chooser_value >= 0)
             {
@@ -638,7 +641,7 @@ int getHybridPrediction(char * argv[])    //sim hybrid <K> <M1> <N> <M2> <tracef
         else
         {
           // Update Chooser value
-          if (instruction[instruction[i].bimodal_pt_index].bimodal_pt_value < 4)
+          if (instruction[instruction[i].bimodal_pt_index].bimodal_pt_value < 4) // gshare taken, actual not taken, bimodal not taken
           {
             if(instruction[instruction[i].chooser_index].chooser_value <= 3 && instruction[instruction[i].chooser_index].chooser_value > 0)
             {
@@ -654,7 +657,7 @@ int getHybridPrediction(char * argv[])    //sim hybrid <K> <M1> <N> <M2> <tracef
           instruction[i].gshare_pt_value_updated = 1;
         }
       }
-      else
+      else          // Predicted not taken
       {
 
     #if ENABLE_DEBUG
@@ -664,7 +667,7 @@ int getHybridPrediction(char * argv[])    //sim hybrid <K> <M1> <N> <M2> <tracef
         if (instruction[i].actual_prediction == 1)
         {
           // Update Chooser value
-          if (instruction[instruction[i].bimodal_pt_index].bimodal_pt_value >= 4)
+          if (instruction[instruction[i].bimodal_pt_index].bimodal_pt_value >= 4) // gshare not taken, actual taken, bimodal taken
           {
             if(instruction[instruction[i].chooser_index].chooser_value <= 3 && instruction[instruction[i].chooser_index].chooser_value > 0)
             {
@@ -682,7 +685,7 @@ int getHybridPrediction(char * argv[])    //sim hybrid <K> <M1> <N> <M2> <tracef
         else
         {
           // Update Chooser value
-          if (instruction[instruction[i].bimodal_pt_index].bimodal_pt_value >= 4)
+          if (instruction[instruction[i].bimodal_pt_index].bimodal_pt_value >= 4) // gshare not taken, actual not taken, bimodal taken
           {
             if(instruction[instruction[i].chooser_index].chooser_value < 3 && instruction[instruction[i].chooser_index].chooser_value >= 0)
             {
@@ -718,7 +721,7 @@ int getHybridPrediction(char * argv[])    //sim hybrid <K> <M1> <N> <M2> <tracef
       if (instruction[i].actual_prediction == 1)
       {
         // Update Chooser value
-        if (instruction[instruction[i].gshare_pt_index].gshare_pt_value < 4)
+        if (instruction[instruction[i].gshare_pt_index].gshare_pt_value < 4) // gshare not taken, actual taken, bimodal taken
         {
           if(instruction[instruction[i].chooser_index].chooser_value <= 3 && instruction[instruction[i].chooser_index].chooser_value > 0)
           {
@@ -737,7 +740,7 @@ int getHybridPrediction(char * argv[])    //sim hybrid <K> <M1> <N> <M2> <tracef
       else
       {
         // Update Chooser value
-        if (instruction[instruction[i].gshare_pt_index].gshare_pt_value < 4)
+        if (instruction[instruction[i].gshare_pt_index].gshare_pt_value < 4) // gshare not taken, actual not taken, bimodal taken
         {
           if(instruction[instruction[i].chooser_index].chooser_value < 3 && instruction[instruction[i].chooser_index].chooser_value >= 0)
           {
@@ -763,7 +766,7 @@ int getHybridPrediction(char * argv[])    //sim hybrid <K> <M1> <N> <M2> <tracef
       if (instruction[i].actual_prediction == 1)
       {
         // Update Chooser value
-        if (instruction[instruction[i].gshare_pt_index].gshare_pt_value >= 4)
+        if (instruction[instruction[i].gshare_pt_index].gshare_pt_value >= 4) // gshare taken, actual taken, bimodal not taken
         {
           if(instruction[instruction[i].chooser_index].chooser_value < 3 && instruction[instruction[i].chooser_index].chooser_value >= 0)
           {
@@ -781,7 +784,7 @@ int getHybridPrediction(char * argv[])    //sim hybrid <K> <M1> <N> <M2> <tracef
       else
       {
         // Update Chooser value
-        if (instruction[instruction[i].gshare_pt_index].gshare_pt_value >= 4)
+        if (instruction[instruction[i].gshare_pt_index].gshare_pt_value >= 4) // gshare not taken, actual not taken, bimodal taken
         {
           if(instruction[instruction[i].chooser_index].chooser_value <= 3 && instruction[instruction[i].chooser_index].chooser_value > 0)
           {
